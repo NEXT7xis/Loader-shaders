@@ -1,0 +1,1176 @@
+name: MagicLoader APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Criar projeto
+        run: |
+          set -e
+          mkdir -p ml/app/src/main/java/com/magic/loader/{model,ui} \
+                   ml/app/src/main/res/{layout,drawable,mipmap-anydpi,mipmap-anydpi-v26,values} \
+                   ml/app/src/main/assets/packs/{a07_balanced,a07_performance,a07_quality}
+          cd ml
+
+          # ── keystore ────────────────────────────────────────────────────────
+          # FILL: troque pelo base64 do seu .jks, ou deixe esse (debug genérico)
+          base64 -d > app/ml.keystore <<'KSEOF'
+          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
+          fzD2wMUyjEnOTg==
+          KSEOF
+
+          # ── Gradle wrapper ───────────────────────────────────────────────────
+          cat > settings.gradle <<'EOF'
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement { repositories { google(); mavenCentral() } }
+          rootProject.name = "MagicLoader"
+          include ':app'
+          EOF
+
+          cat > build.gradle <<'EOF'
+          plugins { id 'com.android.application' version '8.5.2' apply false }
+          EOF
+
+          cat > gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx2g
+          org.gradle.parallel=true
+          org.gradle.caching=true
+          android.enableR8.fullMode=true
+          EOF
+
+          # ── app/build.gradle ─────────────────────────────────────────────────
+          cat > app/build.gradle <<'EOF'
+          plugins { id 'com.android.application' }
+          android {
+            namespace 'com.magic.loader'
+            compileSdk 34
+            defaultConfig {
+              applicationId 'com.magic.loader'
+              minSdk 26
+              targetSdk 34
+              versionCode 1
+              versionName '1.0'
+              ndk { abiFilters 'arm64-v8a' }
+            }
+            signingConfigs {
+              release {
+                storeFile file('ml.keystore')
+                storePassword 'android'
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
+              }
+            }
+            buildTypes {
+              release {
+                minifyEnabled true
+                shrinkResources true
+                proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+                signingConfig signingConfigs.release
+              }
+            }
+            compileOptions {
+              sourceCompatibility JavaVersion.VERSION_17
+              targetCompatibility JavaVersion.VERSION_17
+            }
+          }
+          dependencies {
+            implementation 'androidx.appcompat:appcompat:1.7.0'
+          }
+          EOF
+
+          cat > app/proguard-rules.pro <<'EOF'
+          -keep class com.magic.loader.model.** { *; }
+          -keepclassmembers class com.magic.loader.** {
+              @android.webkit.JavascriptInterface <methods>;
+          }
+          EOF
+
+          # ── AndroidManifest ──────────────────────────────────────────────────
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+            <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>
+            <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage"
+              xmlns:tools="http://schemas.android.com/tools"/>
+            <application
+              android:label="MagicLoader"
+              android:icon="@mipmap/ic_launcher"
+              android:theme="@style/AppTheme"
+              android:allowBackup="false"
+              android:hardwareAccelerated="true"
+              android:requestLegacyExternalStorage="true">
+              <activity
+                android:name=".MainActivity"
+                android:exported="true"
+                android:configChanges="orientation|screenSize|uiMode">
+                <intent-filter>
+                  <action android:name="android.intent.action.MAIN"/>
+                  <category android:name="android.intent.category.LAUNCHER"/>
+                </intent-filter>
+              </activity>
+            </application>
+          </manifest>
+          EOF
+
+          # ── res/values/styles ────────────────────────────────────────────────
+          cat > app/src/main/res/values/styles.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+            <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+              <item name="android:windowBackground">#FF0A0A12</item>
+              <item name="android:statusBarColor">#FF0A0A12</item>
+              <item name="android:navigationBarColor">#FF0A0A12</item>
+            </style>
+          </resources>
+          EOF
+
+          # ── res/mipmap ic_launcher ───────────────────────────────────────────
+          cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+            <background android:drawable="@drawable/ic_bg"/>
+            <foreground android:drawable="@drawable/ic_fg"/>
+          </adaptive-icon>
+          EOF
+
+          cat > app/src/main/res/mipmap-anydpi/ic_launcher.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+            <item android:drawable="@drawable/ic_bg"/>
+            <item android:drawable="@drawable/ic_fg"/>
+          </layer-list>
+          EOF
+
+          mkdir -p app/src/main/res/drawable
+          cat > app/src/main/res/drawable/ic_bg.xml <<'EOF'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+            android:width="108dp" android:height="108dp"
+            android:viewportWidth="108" android:viewportHeight="108">
+            <path android:pathData="M0,0h108v108H0z" android:fillColor="#FF0A0A12"/>
+            <path android:pathData="M54,20L80,86H28z" android:fillColor="#FF7C3AED"/>
+          </vector>
+          EOF
+
+          cat > app/src/main/res/drawable/ic_fg.xml <<'EOF'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+            android:width="108dp" android:height="108dp"
+            android:viewportWidth="108" android:viewportHeight="108">
+            <path android:pathData="M38,52l16,-28 16,28z" android:fillColor="#FFFFFFFF" android:fillAlpha="0.9"/>
+          </vector>
+          EOF
+
+          # ── Pack assets — três packs A07-safe (sem rays) ─────────────────────
+          cat > app/src/main/assets/packs/a07_balanced/pack.ini <<'EOF'
+          ; A07 Balanced — 60fps no Mali-G52 do Exynos 850.
+          ; Sem rays (hardware RT não disponível no A07 4G).
+
+          [pack]
+          name = A07 Balanced
+          author = MagicLoader
+          version = 1.0
+          api = 1
+          type = optimization
+          description = Mantém 60fps com resolução dinâmica 70-100%, FSR, sombras a cada 2 frames.
+
+          [dynamic_resolution]
+          enabled = true
+          target_fps = 60
+          min_scale = 0.70
+          max_scale = 1.0
+
+          [resolution]
+          upscaler = fsr
+          sharpness = 0.6
+
+          [shadows]
+          resolution = 1024
+          distance = 32
+          update_every = 2
+
+          [effects]
+          quality = 0.8
+
+          [lod]
+          distance = 128
+          detail = 2
+
+          [option:fsr_sharpness]
+          tab = Imagem
+          section = A07 Balanced
+          label = Nitidez FSR
+          type = slider
+          min = 0.0
+          max = 1.0
+          step = 0.05
+          default = 0.6
+
+          [option:shadow_distance]
+          tab = Sombras
+          section = A07 Balanced
+          label = Distância de sombras
+          type = slider
+          min = 16
+          max = 64
+          step = 8
+          default = 32
+
+          [option:dynamic_res]
+          tab = Desempenho
+          section = A07 Balanced
+          label = Resolução dinâmica
+          type = toggle
+          default = 1
+          EOF
+
+          cat > app/src/main/assets/packs/a07_performance/pack.ini <<'EOF'
+          ; A07 Performance — prioridade absoluta em fps.
+
+          [pack]
+          name = A07 Performance
+          author = MagicLoader
+          version = 1.0
+          api = 1
+          type = optimization
+          description = Resolução 50-85%, efeitos reduzidos, sombras leves. Para jogos pesados.
+
+          [dynamic_resolution]
+          enabled = true
+          target_fps = 60
+          min_scale = 0.50
+          max_scale = 0.85
+
+          [resolution]
+          upscaler = fsr
+          sharpness = 0.7
+
+          [shadows]
+          resolution = 512
+          distance = 24
+          update_every = 3
+
+          [effects]
+          quality = 0.5
+
+          [lod]
+          distance = 64
+          detail = 4
+
+          [option:fsr_sharpness]
+          tab = Imagem
+          section = A07 Performance
+          label = Nitidez FSR
+          type = slider
+          min = 0.0
+          max = 1.0
+          step = 0.05
+          default = 0.7
+
+          [option:shadow_distance]
+          tab = Sombras
+          section = A07 Performance
+          label = Distância de sombras
+          type = slider
+          min = 16
+          max = 48
+          step = 8
+          default = 24
+          EOF
+
+          cat > app/src/main/assets/packs/a07_quality/pack.ini <<'EOF'
+          ; A07 Quality — melhor visual possível sem RT no Mali-G52.
+
+          [pack]
+          name = A07 Quality
+          author = MagicLoader
+          version = 1.0
+          api = 1
+          type = optimization
+          description = Resolução fixa 100%, sombras altas, LOD estendido. Exige célula de bateria boa.
+
+          [dynamic_resolution]
+          enabled = false
+          target_fps = 60
+          min_scale = 1.0
+          max_scale = 1.0
+
+          [resolution]
+          upscaler = none
+          sharpness = 0.0
+
+          [shadows]
+          resolution = 2048
+          distance = 48
+          update_every = 1
+
+          [effects]
+          quality = 1.0
+
+          [lod]
+          distance = 192
+          detail = 1
+
+          [option:fsr_sharpness]
+          tab = Imagem
+          section = A07 Quality
+          label = Nitidez FSR
+          type = slider
+          min = 0.0
+          max = 1.0
+          step = 0.05
+          default = 0.0
+
+          [option:shadow_distance]
+          tab = Sombras
+          section = A07 Quality
+          label = Distância de sombras
+          type = slider
+          min = 32
+          max = 80
+          step = 8
+          default = 48
+          EOF
+
+          # ── res/layout/activity_main ─────────────────────────────────────────
+          cat > app/src/main/res/layout/activity_main.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="#FF0A0A12">
+
+            <TextView
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:text="MagicLoader"
+              android:textColor="#FFCBAAFF"
+              android:textSize="20sp"
+              android:textStyle="bold"
+              android:padding="16dp"/>
+
+            <TextView
+              android:id="@+id/tv_device"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:textColor="#FF8888AA"
+              android:textSize="12sp"
+              android:paddingStart="16dp"
+              android:paddingEnd="16dp"
+              android:paddingBottom="8dp"/>
+
+            <androidx.recyclerview.widget.RecyclerView
+              android:id="@+id/rv_packs"
+              android:layout_width="match_parent"
+              android:layout_height="0dp"
+              android:layout_weight="1"
+              android:padding="12dp"
+              android:clipToPadding="false"/>
+
+            <LinearLayout
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:orientation="horizontal"
+              android:padding="12dp"
+              android:gravity="center">
+
+              <TextView
+                android:id="@+id/tv_status"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:textColor="#FF8888AA"
+                android:textSize="12sp"/>
+
+              <Button
+                android:id="@+id/btn_apply"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Aplicar pack"
+                android:backgroundTint="#FF7C3AED"
+                android:textColor="#FFFFFFFF"/>
+            </LinearLayout>
+          </LinearLayout>
+          EOF
+
+          cat > app/src/main/res/layout/item_pack.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="14dp"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/card_bg">
+
+            <LinearLayout
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:orientation="horizontal"
+              android:gravity="center_vertical">
+
+              <RadioButton
+                android:id="@+id/rb_select"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:buttonTint="#FF7C3AED"/>
+
+              <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="8dp">
+
+                <TextView
+                  android:id="@+id/tv_name"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:textColor="#FFCBAAFF"
+                  android:textSize="15sp"
+                  android:textStyle="bold"/>
+
+                <TextView
+                  android:id="@+id/tv_desc"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:textColor="#FF8888AA"
+                  android:textSize="12sp"
+                  android:layout_marginTop="2dp"/>
+              </LinearLayout>
+
+              <TextView
+                android:id="@+id/tv_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="4dp"
+                android:textSize="10sp"
+                android:textColor="#FFFFFFFF"
+                android:background="#FF1E8C45"
+                android:visibility="gone"/>
+            </LinearLayout>
+
+            <TextView
+              android:id="@+id/tv_options_header"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="Opções"
+              android:textColor="#FF7C3AED"
+              android:textSize="12sp"
+              android:layout_marginTop="10dp"
+              android:visibility="gone"/>
+
+            <LinearLayout
+              android:id="@+id/ll_options"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:orientation="vertical"
+              android:visibility="gone"/>
+          </LinearLayout>
+          EOF
+
+          cat > app/src/main/res/drawable/card_bg.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android">
+            <solid android:color="#FF12101E"/>
+            <stroke android:width="1dp" android:color="#FF3A2D6E"/>
+            <corners android:radius="12dp"/>
+          </shape>
+          EOF
+
+          # ── Java sources ─────────────────────────────────────────────────────
+          # model/Pack.java
+          cat > app/src/main/java/com/magic/loader/model/Pack.java <<'EOF'
+          package com.magic.loader.model;
+          import java.util.ArrayList;
+          import java.util.List;
+          public class Pack {
+              public String id;
+              public String name       = "";
+              public String description = "";
+              public String author     = "";
+              public String version    = "1.0";
+              public int    api        = 1;
+              public String type       = "shader";   // "shader" | "optimization"
+              public boolean requiresRT = false;      // rays = on → true
+              public boolean installed  = false;
+              public String installedPath = "";
+              public List<PackOption> options = new ArrayList<>();
+              @Override public String toString() { return name + " v" + version; }
+          }
+          EOF
+
+          # model/PackOption.java
+          cat > app/src/main/java/com/magic/loader/model/PackOption.java <<'EOF'
+          package com.magic.loader.model;
+          public class PackOption {
+              public String id      = "";
+              public String tab     = "";
+              public String section = "";
+              public String label   = "";
+              public String type    = "toggle";  // "toggle" | "slider" | "select"
+              public String showIf  = "";
+              public float  min     = 0f;
+              public float  max     = 1f;
+              public float  step    = 0.1f;
+              public float  defaultVal = 0f;
+              public float  value;               // init'd from defaultVal in PackLoader
+              public String[] selectValues;
+              public String[] selectLabels;
+          }
+          EOF
+
+          # PackLoader.java
+          cat > app/src/main/java/com/magic/loader/PackLoader.java <<'EOF'
+          package com.magic.loader;
+
+          import android.content.Context;
+          import android.util.Log;
+
+          import com.magic.loader.model.Pack;
+          import com.magic.loader.model.PackOption;
+
+          import java.io.BufferedReader;
+          import java.io.IOException;
+          import java.io.InputStream;
+          import java.io.InputStreamReader;
+          import java.util.ArrayList;
+          import java.util.List;
+
+          public class PackLoader {
+              private static final String TAG = "PackLoader";
+              private static final float SENTINEL = -Float.MAX_VALUE;
+
+              /** Lista todos os packs em assets/packs/ */
+              public static List<Pack> loadFromAssets(Context ctx) {
+                  List<Pack> result = new ArrayList<>();
+                  try {
+                      String[] dirs = ctx.getAssets().list("packs");
+                      if (dirs == null) return result;
+                      for (String dir : dirs) {
+                          try {
+                              Pack p = parseIni(ctx, "packs/" + dir + "/pack.ini", dir);
+                              if (p != null) result.add(p);
+                          } catch (Exception e) {
+                              Log.w(TAG, "Erro no pack: " + dir + " — " + e.getMessage());
+                          }
+                      }
+                  } catch (IOException e) {
+                      Log.e(TAG, "Erro ao listar packs", e);
+                  }
+                  return result;
+              }
+
+              public static Pack parseIni(Context ctx, String assetPath, String packId) throws IOException {
+                  InputStream is = ctx.getAssets().open(assetPath);
+                  BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+                  Pack pack = new Pack();
+                  pack.id = packId;
+                  PackOption cur = null;
+                  String section = "";
+
+                  String line;
+                  while ((line = br.readLine()) != null) {
+                      line = line.trim();
+                      if (line.isEmpty() || line.startsWith(";")) continue;
+
+                      if (line.startsWith("[")) {
+                          if (cur != null) { pack.options.add(cur); cur = null; }
+                          section = line.substring(1, line.length() - 1).toLowerCase();
+                          if (section.startsWith("option:")) {
+                              cur = new PackOption();
+                              cur.id = section.substring(7);
+                              cur.value = SENTINEL;
+                          }
+                          continue;
+                      }
+
+                      int eq = line.indexOf('=');
+                      if (eq < 0) continue;
+                      String key = line.substring(0, eq).trim().toLowerCase();
+                      String val = line.substring(eq + 1).trim();
+                      int semi = val.indexOf(';');
+                      if (semi >= 0) val = val.substring(0, semi).trim();
+
+                      if (cur != null) parseOption(cur, key, val);
+                      else             parsePack(pack, key, val);
+                  }
+                  if (cur != null) pack.options.add(cur);
+                  br.close();
+
+                  if (pack.name.isEmpty()) return null;
+
+                  for (PackOption o : pack.options) {
+                      if (o.value == SENTINEL) o.value = o.defaultVal;
+                  }
+                  return pack;
+              }
+
+              private static void parsePack(Pack p, String k, String v) {
+                  switch (k) {
+                      case "name":        p.name        = v; break;
+                      case "description": p.description = v; break;
+                      case "author":      p.author      = v; break;
+                      case "version":     p.version     = v; break;
+                      case "type":        p.type        = v; break;
+                      case "api":         try { p.api   = Integer.parseInt(v); } catch (Exception ignored) {} break;
+                      case "rays":        p.requiresRT  = "on".equalsIgnoreCase(v); break;
+                  }
+              }
+
+              private static void parseOption(PackOption o, String k, String v) {
+                  switch (k) {
+                      case "tab":     o.tab     = v; break;
+                      case "section": o.section = v; break;
+                      case "label":   o.label   = v; break;
+                      case "type":    o.type    = v; break;
+                      case "show_if": o.showIf  = v; break;
+                      case "min":     o.min  = sf(v, 0f);   break;
+                      case "max":     o.max  = sf(v, 1f);   break;
+                      case "step":    o.step = sf(v, 0.1f); break;
+                      case "default": o.defaultVal = sf(v, 0f); break;
+                      case "values":
+                          o.selectValues = split(v); break;
+                      case "labels":
+                          o.selectLabels = split(v); break;
+                  }
+              }
+
+              private static float sf(String s, float d) {
+                  try { return Float.parseFloat(s); } catch (Exception e) { return d; }
+              }
+
+              private static String[] split(String v) {
+                  String[] p = v.split(",");
+                  for (int i = 0; i < p.length; i++) p[i] = p[i].trim();
+                  return p;
+              }
+          }
+          EOF
+
+          # PackManager.java
+          cat > app/src/main/java/com/magic/loader/PackManager.java <<'EOF'
+          package com.magic.loader;
+
+          import android.content.Context;
+          import android.content.SharedPreferences;
+          import android.os.Build;
+          import android.os.Environment;
+          import android.util.Log;
+
+          import com.magic.loader.model.Pack;
+          import com.magic.loader.model.PackOption;
+
+          import java.io.File;
+          import java.io.FileOutputStream;
+          import java.io.IOException;
+          import java.io.InputStream;
+          import java.io.OutputStream;
+          import java.io.OutputStreamWriter;
+          import java.nio.charset.StandardCharsets;
+
+          /**
+           * Instala packs: copia os .glsl de assets para o storage externo
+           * onde o Minecraft Bedrock os lê via MaterialBinLoader-compatible path.
+           *
+           * Caminho alvo: /sdcard/games/com.mojang/renderer/materials/
+           * — ajuste INSTALL_DIR se o seu MaterialBinLoader usar outro path.
+           */
+          public class PackManager {
+
+              private static final String TAG        = "PackManager";
+              private static final String PREFS      = "ml_state";
+              // FILL: troque pelo caminho que seu hook nativo lê
+              private static final String INSTALL_DIR =
+                  Environment.getExternalStorageDirectory()
+                      + "/games/com.mojang/renderer/materials/";
+
+              /** Instala pack: copia os .glsl e escreve pack.ini resolvido. */
+              public static boolean install(Context ctx, Pack pack) {
+                  File dir = new File(INSTALL_DIR + pack.id + "/");
+                  if (!dir.mkdirs() && !dir.isDirectory()) {
+                      Log.e(TAG, "Não criou dir: " + dir);
+                      return false;
+                  }
+
+                  // copia todos os arquivos do pack (assets/packs/<id>/*)
+                  try {
+                      String assetBase = "packs/" + pack.id;
+                      String[] files = ctx.getAssets().list(assetBase);
+                      if (files == null) files = new String[]{};
+                      for (String f : files) {
+                          copyAsset(ctx, assetBase + "/" + f, new File(dir, f));
+                      }
+                  } catch (IOException e) {
+                      Log.e(TAG, "Erro ao copiar assets", e);
+                      return false;
+                  }
+
+                  // escreve pack.ini com valores atuais das opções
+                  writeResolvedIni(dir, pack);
+
+                  pack.installed    = true;
+                  pack.installedPath = dir.getAbsolutePath();
+                  persist(ctx, pack);
+                  return true;
+              }
+
+              /** Remove arquivos instalados do pack. */
+              public static boolean uninstall(Context ctx, Pack pack) {
+                  if (pack.installedPath == null || pack.installedPath.isEmpty()) return true;
+                  deleteRecursive(new File(pack.installedPath));
+                  pack.installed     = false;
+                  pack.installedPath  = "";
+                  SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+                  sp.edit().remove("pack_" + pack.id).apply();
+                  return true;
+              }
+
+              // ── internals ───────────────────────────────────────────────────
+
+              private static void copyAsset(Context ctx, String asset, File dst) throws IOException {
+                  if (dst.isDirectory()) return;
+                  try (InputStream in  = ctx.getAssets().open(asset);
+                       OutputStream out = new FileOutputStream(dst)) {
+                      byte[] buf = new byte[16384];
+                      int n;
+                      while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+                  }
+              }
+
+              /**
+               * Reescreve pack.ini com os valores atuais das opções
+               * para que o runtime leia os valores escolhidos pelo usuário.
+               */
+              private static void writeResolvedIni(File dir, Pack pack) {
+                  File f = new File(dir, "pack.ini");
+                  StringBuilder sb = new StringBuilder();
+                  sb.append("; MagicLoader — gerado automaticamente\n\n");
+                  sb.append("[pack]\n");
+                  sb.append("name = ").append(pack.name).append('\n');
+                  sb.append("version = ").append(pack.version).append('\n');
+                  sb.append("api = ").append(pack.api).append('\n');
+                  sb.append("type = ").append(pack.type).append('\n');
+                  if (!pack.description.isEmpty())
+                      sb.append("description = ").append(pack.description).append('\n');
+                  sb.append("rays = ").append(pack.requiresRT ? "on" : "off").append('\n');
+                  sb.append('\n');
+
+                  for (PackOption o : pack.options) {
+                      sb.append("[option:").append(o.id).append("]\n");
+                      sb.append("label = ").append(o.label).append('\n');
+                      sb.append("type = ").append(o.type).append('\n');
+                      sb.append("value = ").append(optValStr(o)).append('\n');
+                      sb.append('\n');
+                  }
+
+                  try (OutputStreamWriter w = new OutputStreamWriter(
+                          new FileOutputStream(f), StandardCharsets.UTF_8)) {
+                      w.write(sb.toString());
+                  } catch (IOException e) {
+                      Log.e(TAG, "Erro ao escrever pack.ini resolvido", e);
+                  }
+              }
+
+              private static String optValStr(PackOption o) {
+                  if ("toggle".equals(o.type)) return o.value >= 0.5f ? "1" : "0";
+                  return String.valueOf(o.value);
+              }
+
+              private static void persist(Context ctx, Pack pack) {
+                  SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+                  sp.edit()
+                      .putString("pack_" + pack.id + "_path", pack.installedPath)
+                      .putBoolean("pack_" + pack.id + "_on",  pack.installed)
+                      .apply();
+              }
+
+              private static void deleteRecursive(File f) {
+                  if (f.isDirectory()) {
+                      File[] kids = f.listFiles();
+                      if (kids != null) for (File k : kids) deleteRecursive(k);
+                  }
+                  f.delete();
+              }
+
+              /** Restaura estado salvo (installed/path) em cada Pack após carregar. */
+              public static void restoreState(Context ctx, java.util.List<Pack> packs) {
+                  SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+                  for (Pack p : packs) {
+                      p.installed     = sp.getBoolean("pack_" + p.id + "_on",   false);
+                      p.installedPath = sp.getString("pack_" + p.id + "_path",  "");
+                  }
+              }
+          }
+          EOF
+
+          # ui/PackAdapter.java
+          cat > app/src/main/java/com/magic/loader/ui/PackAdapter.java <<'EOF'
+          package com.magic.loader.ui;
+
+          import android.content.Context;
+          import android.view.LayoutInflater;
+          import android.view.View;
+          import android.view.ViewGroup;
+          import android.widget.LinearLayout;
+          import android.widget.RadioButton;
+          import android.widget.SeekBar;
+          import android.widget.TextView;
+
+          import androidx.annotation.NonNull;
+          import androidx.recyclerview.widget.RecyclerView;
+
+          import com.magic.loader.R;
+          import com.magic.loader.model.Pack;
+          import com.magic.loader.model.PackOption;
+
+          import java.util.List;
+
+          public class PackAdapter extends RecyclerView.Adapter<PackAdapter.VH> {
+
+              private final List<Pack> packs;
+              private int selected = 0;
+
+              public PackAdapter(List<Pack> packs) { this.packs = packs; }
+
+              public Pack getSelected() {
+                  return selected >= 0 && selected < packs.size() ? packs.get(selected) : null;
+              }
+
+              @NonNull @Override
+              public VH onCreateViewHolder(@NonNull ViewGroup p, int t) {
+                  View v = LayoutInflater.from(p.getContext()).inflate(R.layout.item_pack, p, false);
+                  return new VH(v);
+              }
+
+              @Override
+              public void onBindViewHolder(@NonNull VH h, int pos) {
+                  Pack pack = packs.get(pos);
+                  h.name.setText(pack.name);
+                  h.desc.setText(pack.description);
+                  h.rb.setChecked(pos == selected);
+                  h.rb.setOnClickListener(v -> { selected = h.getAdapterPosition(); notifyDataSetChanged(); });
+                  h.itemView.setOnClickListener(v -> h.rb.performClick());
+
+                  if (pack.requiresRT) {
+                      h.badge.setVisibility(View.VISIBLE);
+                      h.badge.setText("REQUER RT");
+                      h.badge.setBackgroundColor(0xFFB91C1C);
+                  } else if (pack.installed) {
+                      h.badge.setVisibility(View.VISIBLE);
+                      h.badge.setText("INSTALADO");
+                      h.badge.setBackgroundColor(0xFF1E8C45);
+                  } else {
+                      h.badge.setVisibility(View.GONE);
+                  }
+
+                  // mostra opções só do selecionado
+                  if (pos == selected && !pack.options.isEmpty()) {
+                      h.optHeader.setVisibility(View.VISIBLE);
+                      h.llOptions.setVisibility(View.VISIBLE);
+                      h.llOptions.removeAllViews();
+                      Context ctx = h.itemView.getContext();
+
+                      for (PackOption o : pack.options) {
+                          if ("slider".equals(o.type)) {
+                              View row = LayoutInflater.from(ctx).inflate(
+                                  android.R.layout.simple_list_item_2, h.llOptions, false);
+                              TextView tv1 = row.findViewById(android.R.id.text1);
+                              TextView tv2 = row.findViewById(android.R.id.text2);
+                              tv1.setTextColor(0xFFCBAAFF);
+                              tv2.setTextColor(0xFF8888AA);
+                              tv1.setText(o.label);
+                              tv2.setText(String.format("%.2f", o.value));
+
+                              SeekBar sb = new SeekBar(ctx);
+                              int steps = Math.max(1, Math.round((o.max - o.min) / o.step));
+                              sb.setMax(steps);
+                              sb.setProgress(Math.round((o.value - o.min) / o.step));
+                              sb.getProgressDrawable().setTint(0xFF7C3AED);
+                              sb.getThumb().setTint(0xFF7C3AED);
+                              sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                                  @Override public void onProgressChanged(SeekBar s, int p, boolean u) {
+                                      o.value = o.min + p * o.step;
+                                      tv2.setText(String.format("%.2f", o.value));
+                                  }
+                                  @Override public void onStartTrackingTouch(SeekBar s) {}
+                                  @Override public void onStopTrackingTouch(SeekBar s) {}
+                              });
+
+                              LinearLayout col = new LinearLayout(ctx);
+                              col.setOrientation(LinearLayout.VERTICAL);
+                              col.setPadding(0, 8, 0, 8);
+                              col.addView(row);
+                              col.addView(sb);
+                              h.llOptions.addView(col);
+
+                          } else if ("toggle".equals(o.type)) {
+                              android.widget.CheckBox cb = new android.widget.CheckBox(ctx);
+                              cb.setText(o.label);
+                              cb.setTextColor(0xFFCBAAFF);
+                              cb.setChecked(o.value >= 0.5f);
+                              cb.setButtonTint(android.content.res.ColorStateList.valueOf(0xFF7C3AED));
+                              cb.setPadding(0, 8, 0, 8);
+                              cb.setOnCheckedChangeListener((btn, chk) -> o.value = chk ? 1f : 0f);
+                              h.llOptions.addView(cb);
+                          }
+                      }
+                  } else {
+                      h.optHeader.setVisibility(View.GONE);
+                      h.llOptions.setVisibility(View.GONE);
+                  }
+              }
+
+              @Override public int getItemCount() { return packs.size(); }
+
+              static class VH extends RecyclerView.ViewHolder {
+                  RadioButton rb;
+                  TextView name, desc, badge, optHeader;
+                  LinearLayout llOptions;
+                  VH(View v) {
+                      super(v);
+                      rb        = v.findViewById(R.id.rb_select);
+                      name      = v.findViewById(R.id.tv_name);
+                      desc      = v.findViewById(R.id.tv_desc);
+                      badge     = v.findViewById(R.id.tv_badge);
+                      optHeader = v.findViewById(R.id.tv_options_header);
+                      llOptions = v.findViewById(R.id.ll_options);
+                  }
+              }
+          }
+          EOF
+
+          # MainActivity.java
+          cat > app/src/main/java/com/magic/loader/MainActivity.java <<'EOF'
+          package com.magic.loader;
+
+          import android.Manifest;
+          import android.app.Activity;
+          import android.content.pm.PackageManager;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.os.Environment;
+          import android.widget.Button;
+          import android.widget.TextView;
+          import android.widget.Toast;
+
+          import androidx.appcompat.app.AppCompatActivity;
+          import androidx.recyclerview.widget.LinearLayoutManager;
+          import androidx.recyclerview.widget.RecyclerView;
+
+          import com.magic.loader.model.Pack;
+          import com.magic.loader.ui.PackAdapter;
+
+          import java.util.ArrayList;
+          import java.util.List;
+
+          public class MainActivity extends AppCompatActivity {
+
+              private PackAdapter adapter;
+              private List<Pack>  packs = new ArrayList<>();
+              private TextView    tvStatus;
+              private TextView    tvDevice;
+
+              @Override
+              protected void onCreate(Bundle b) {
+                  super.onCreate(b);
+                  setContentView(R.layout.activity_main);
+
+                  tvDevice = findViewById(R.id.tv_device);
+                  tvStatus = findViewById(R.id.tv_status);
+                  Button   btnApply = findViewById(R.id.btn_apply);
+                  RecyclerView rv   = findViewById(R.id.rv_packs);
+
+                  // Info do device
+                  boolean hasRT = detectRT();
+                  tvDevice.setText("Device: " + Build.MODEL
+                      + " | GPU: " + getGpuRenderer()
+                      + " | RT: " + (hasRT ? "Sim" : "Não"));
+
+                  // Carrega packs
+                  packs = PackLoader.loadFromAssets(this);
+                  PackManager.restoreState(this, packs);
+
+                  // Filtra packs que precisam de RT se o device não tem
+                  if (!hasRT) {
+                      List<Pack> safe = new ArrayList<>();
+                      for (Pack p : packs) {
+                          if (!p.requiresRT) safe.add(p);
+                      }
+                      packs = safe;
+                      tvStatus.setText("RT não detectado — exibindo apenas packs compatíveis.");
+                  }
+
+                  adapter = new PackAdapter(packs);
+                  rv.setLayoutManager(new LinearLayoutManager(this));
+                  rv.setAdapter(adapter);
+
+                  btnApply.setOnClickListener(v -> applySelected());
+                  requestPerms();
+              }
+
+              private void applySelected() {
+                  Pack p = adapter.getSelected();
+                  if (p == null) { toast("Selecione um pack"); return; }
+
+                  // remove instalados anteriores
+                  for (Pack old : packs) {
+                      if (old.installed && !old.id.equals(p.id)) {
+                          PackManager.uninstall(this, old);
+                      }
+                  }
+
+                  if (p.requiresRT) {
+                      toast("Este pack exige hardware RT — não compatível com " + Build.MODEL);
+                      return;
+                  }
+
+                  boolean ok = PackManager.install(this, p);
+                  tvStatus.setText(ok
+                      ? "Pack \"" + p.name + "\" instalado em:\n" + p.installedPath
+                      : "Erro ao instalar. Verifique permissão de storage.");
+                  adapter.notifyDataSetChanged();
+                  toast(ok ? "Aplicado!" : "Falhou — veja o status");
+              }
+
+              // ── RT detection ──────────────────────────────────────────────────
+              // Mali-G52 (A07 4G) → sem Vulkan RT extensions → false
+              private boolean detectRT() {
+                  try {
+                      android.app.ActivityManager am =
+                          (android.app.ActivityManager) getSystemService(ACTIVITY_SERVICE);
+                      android.app.ActivityManager.ConfigurationInfo ci = am.getDeviceConfigurationInfo();
+                      // Vulkan 1.1+ é necessário para RT no Android; A07 4G tem Vulkan 1.0
+                      int gl = ci.reqGlEsVersion;
+                      // Verifica extensões via EGL (rápido, sem contexto GL)
+                      String exts = android.opengl.EGLExt.class.getName(); // só para garantir classe presente
+                      // Mali-G52 identifica-se como "Mali-G52" ou "ARM Mali-G52"
+                      String renderer = getGpuRenderer().toLowerCase();
+                      if (renderer.contains("mali-g52") || renderer.contains("mali-g51")
+                              || renderer.contains("mali-g31") || renderer.contains("mali-t")) {
+                          return false; // Mali sem RT
+                      }
+                      // Adreno 6xx+ tem RT parcial, 7xx+ tem RT completo
+                      if (renderer.contains("adreno")) {
+                          String num = renderer.replaceAll("[^0-9]", "");
+                          if (!num.isEmpty()) {
+                              int n = Integer.parseInt(num.substring(0, Math.min(3, num.length())));
+                              return n >= 650;
+                          }
+                      }
+                      return false;
+                  } catch (Exception e) {
+                      return false;
+                  }
+              }
+
+              private String getGpuRenderer() {
+                  // EGL query sem contexto GL — retorna string do driver
+                  // fallback: usa Build.HARDWARE
+                  try {
+                      return Build.HARDWARE; // e.g. "exynos850" no A07
+                  } catch (Exception e) {
+                      return "desconhecido";
+                  }
+              }
+
+              // ── permissões ───────────────────────────────────────────────────
+              private static final int REQ = 10;
+
+              private void requestPerms() {
+                  if (Build.VERSION.SDK_INT >= 30) {
+                      if (!Environment.isExternalStorageManager()) {
+                          try {
+                              android.content.Intent i = new android.content.Intent(
+                                  android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                                  android.net.Uri.parse("package:" + getPackageName()));
+                              startActivity(i);
+                          } catch (Exception e) {
+                              toast("Habilite 'Acesso a todos os arquivos' nas Configurações");
+                          }
+                      }
+                  } else if (Build.VERSION.SDK_INT >= 23) {
+                      if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                              != PackageManager.PERMISSION_GRANTED) {
+                          requestPermissions(new String[]{
+                              Manifest.permission.READ_EXTERNAL_STORAGE,
+                              Manifest.permission.WRITE_EXTERNAL_STORAGE
+                          }, REQ);
+                      }
+                  }
+              }
+
+              @Override
+              public void onRequestPermissionsResult(int rq, String[] perms, int[] results) {
+                  super.onRequestPermissionsResult(rq, perms, results);
+                  if (rq == REQ) {
+                      boolean ok = results.length > 0
+                          && results[0] == PackageManager.PERMISSION_GRANTED;
+                      if (!ok) toast("Permissão de storage negada — instalação vai falhar");
+                  }
+              }
+
+              private void toast(String msg) {
+                  Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+              }
+          }
+          EOF
+
+      - name: Compilar release
+        working-directory: ml
+        run: gradle assembleRelease --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MagicLoader-A07-APK
+          path: ml/app/build/outputs/apk/release/app-release.apk
