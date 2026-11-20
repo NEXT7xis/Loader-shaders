@@ -25,7 +25,6 @@ jobs:
                    ml/app/src/main/assets/packs/{a07_balanced,a07_performance,a07_quality}
           cd ml
 
-          # ── keystore ────────────────────────────────────────────────────────
           base64 -d > app/ml.keystore <<'KSEOF'
           /u3+7QAAAAIAAAABAAAAAQAPYW5kcm9pZGRlYnVna2V5AAABobAAmIsAAAT+MIIE+jAMBgorBgEE
           ASoCEQEBBIIE6OBWad/iFXqYBbn3pZtwLzNzUtG1bObJD3kM28d2JxuTu7cOoKAdeATOwUXM5Vqb
@@ -67,7 +66,6 @@ jobs:
           fzD2wMUyjEnOTg==
           KSEOF
 
-          # ── Gradle wrapper ───────────────────────────────────────────────────
           cat > settings.gradle <<'EOF'
           pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
           dependencyResolutionManagement { repositories { google(); mavenCentral() } }
@@ -77,6 +75,15 @@ jobs:
 
           cat > build.gradle <<'EOF'
           plugins { id 'com.android.application' version '8.5.2' apply false }
+          subprojects {
+            configurations.all {
+              resolutionStrategy {
+                force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
+              }
+              exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+              exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+            }
+          }
           EOF
 
           cat > gradle.properties <<'EOF'
@@ -87,7 +94,6 @@ jobs:
           android.useAndroidX=true
           EOF
 
-          # ── app/build.gradle ─────────────────────────────────────────────────
           cat > app/build.gradle <<'EOF'
           plugins { id 'com.android.application' }
           android {
@@ -123,8 +129,15 @@ jobs:
             }
           }
           dependencies {
-            implementation 'androidx.appcompat:appcompat:1.7.0'
-            implementation 'androidx.recyclerview:recyclerview:1.3.2'
+            implementation('androidx.appcompat:appcompat:1.7.0') {
+              exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+              exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+            }
+            implementation('androidx.recyclerview:recyclerview:1.3.2') {
+              exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+              exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+            }
+            implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
           }
           EOF
 
@@ -135,7 +148,6 @@ jobs:
           }
           EOF
 
-          # ── AndroidManifest ──────────────────────────────────────────────────
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -164,7 +176,6 @@ jobs:
           </manifest>
           EOF
 
-          # ── res/values/styles ────────────────────────────────────────────────
           cat > app/src/main/res/values/styles.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
@@ -176,7 +187,6 @@ jobs:
           </resources>
           EOF
 
-          # ── res/mipmap ic_launcher ───────────────────────────────────────────
           cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
@@ -211,7 +221,15 @@ jobs:
           </vector>
           EOF
 
-          # ── Pack assets ──────────────────────────────────────────────────────
+          cat > app/src/main/res/drawable/card_bg.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android">
+            <solid android:color="#FF12101E"/>
+            <stroke android:width="1dp" android:color="#FF3A2D6E"/>
+            <corners android:radius="12dp"/>
+          </shape>
+          EOF
+
           cat > app/src/main/assets/packs/a07_balanced/pack.ini <<'EOF'
           [pack]
           name = A07 Balanced
@@ -375,7 +393,6 @@ jobs:
           default = 48
           EOF
 
-          # ── res/layout/activity_main ─────────────────────────────────────────
           cat > app/src/main/res/layout/activity_main.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -513,30 +530,20 @@ jobs:
           </LinearLayout>
           EOF
 
-          cat > app/src/main/res/drawable/card_bg.xml <<'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <shape xmlns:android="http://schemas.android.com/apk/res/android">
-            <solid android:color="#FF12101E"/>
-            <stroke android:width="1dp" android:color="#FF3A2D6E"/>
-            <corners android:radius="12dp"/>
-          </shape>
-          EOF
-
-          # ── Java sources ─────────────────────────────────────────────────────
           cat > app/src/main/java/com/magic/loader/model/Pack.java <<'EOF'
           package com.magic.loader.model;
           import java.util.ArrayList;
           import java.util.List;
           public class Pack {
               public String id;
-              public String name       = "";
+              public String name        = "";
               public String description = "";
-              public String author     = "";
-              public String version    = "1.0";
-              public int    api        = 1;
-              public String type       = "shader";
-              public boolean requiresRT = false;
-              public boolean installed  = false;
+              public String author      = "";
+              public String version     = "1.0";
+              public int    api         = 1;
+              public String type        = "shader";
+              public boolean requiresRT  = false;
+              public boolean installed   = false;
               public String installedPath = "";
               public List<PackOption> options = new ArrayList<>();
               @Override public String toString() { return name + " v" + version; }
@@ -546,15 +553,15 @@ jobs:
           cat > app/src/main/java/com/magic/loader/model/PackOption.java <<'EOF'
           package com.magic.loader.model;
           public class PackOption {
-              public String id      = "";
-              public String tab     = "";
-              public String section = "";
-              public String label   = "";
-              public String type    = "toggle";
-              public String showIf  = "";
-              public float  min     = 0f;
-              public float  max     = 1f;
-              public float  step    = 0.1f;
+              public String id         = "";
+              public String tab        = "";
+              public String section    = "";
+              public String label      = "";
+              public String type       = "toggle";
+              public String showIf     = "";
+              public float  min        = 0f;
+              public float  max        = 1f;
+              public float  step       = 0.1f;
               public float  defaultVal = 0f;
               public float  value;
               public String[] selectValues;
@@ -567,10 +574,8 @@ jobs:
 
           import android.content.Context;
           import android.util.Log;
-
           import com.magic.loader.model.Pack;
           import com.magic.loader.model.PackOption;
-
           import java.io.BufferedReader;
           import java.io.IOException;
           import java.io.InputStream;
@@ -579,8 +584,8 @@ jobs:
           import java.util.List;
 
           public class PackLoader {
-              private static final String TAG = "PackLoader";
-              private static final float SENTINEL = -Float.MAX_VALUE;
+              private static final String TAG      = "PackLoader";
+              private static final float  SENTINEL = -Float.MAX_VALUE;
 
               public static List<Pack> loadFromAssets(Context ctx) {
                   List<Pack> result = new ArrayList<>();
@@ -602,12 +607,11 @@ jobs:
               }
 
               public static Pack parseIni(Context ctx, String assetPath, String packId) throws IOException {
-                  InputStream is = ctx.getAssets().open(assetPath);
-                  BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
-                  Pack pack = new Pack();
+                  InputStream    is   = ctx.getAssets().open(assetPath);
+                  BufferedReader br   = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+                  Pack           pack = new Pack();
                   pack.id = packId;
-                  PackOption cur = null;
-                  String section = "";
+                  PackOption cur     = null;
 
                   String line;
                   while ((line = br.readLine()) != null) {
@@ -616,10 +620,10 @@ jobs:
 
                       if (line.startsWith("[")) {
                           if (cur != null) { pack.options.add(cur); cur = null; }
-                          section = line.substring(1, line.length() - 1).toLowerCase();
+                          String section = line.substring(1, line.length() - 1).toLowerCase();
                           if (section.startsWith("option:")) {
-                              cur = new PackOption();
-                              cur.id = section.substring(7);
+                              cur       = new PackOption();
+                              cur.id    = section.substring(7);
                               cur.value = SENTINEL;
                           }
                           continue;
@@ -639,10 +643,8 @@ jobs:
                   br.close();
 
                   if (pack.name.isEmpty()) return null;
-
-                  for (PackOption o : pack.options) {
+                  for (PackOption o : pack.options)
                       if (o.value == SENTINEL) o.value = o.defaultVal;
-                  }
                   return pack;
               }
 
@@ -653,31 +655,30 @@ jobs:
                       case "author":      p.author      = v; break;
                       case "version":     p.version     = v; break;
                       case "type":        p.type        = v; break;
-                      case "api":         try { p.api   = Integer.parseInt(v); } catch (Exception ignored) {} break;
+                      case "api":         try { p.api = Integer.parseInt(v); } catch (Exception ignored) {} break;
                       case "rays":        p.requiresRT  = "on".equalsIgnoreCase(v); break;
                   }
               }
 
               private static void parseOption(PackOption o, String k, String v) {
                   switch (k) {
-                      case "tab":     o.tab     = v; break;
-                      case "section": o.section = v; break;
-                      case "label":   o.label   = v; break;
-                      case "type":    o.type    = v; break;
-                      case "show_if": o.showIf  = v; break;
-                      case "min":     o.min  = sf(v, 0f);   break;
-                      case "max":     o.max  = sf(v, 1f);   break;
-                      case "step":    o.step = sf(v, 0.1f); break;
-                      case "default": o.defaultVal = sf(v, 0f); break;
-                      case "values":  o.selectValues = split(v); break;
-                      case "labels":  o.selectLabels = split(v); break;
+                      case "tab":     o.tab        = v; break;
+                      case "section": o.section    = v; break;
+                      case "label":   o.label      = v; break;
+                      case "type":    o.type       = v; break;
+                      case "show_if": o.showIf     = v; break;
+                      case "min":     o.min        = sf(v, 0f);   break;
+                      case "max":     o.max        = sf(v, 1f);   break;
+                      case "step":    o.step       = sf(v, 0.1f); break;
+                      case "default": o.defaultVal = sf(v, 0f);   break;
+                      case "values":  o.selectValues = split(v);  break;
+                      case "labels":  o.selectLabels = split(v);  break;
                   }
               }
 
               private static float sf(String s, float d) {
                   try { return Float.parseFloat(s); } catch (Exception e) { return d; }
               }
-
               private static String[] split(String v) {
                   String[] p = v.split(",");
                   for (int i = 0; i < p.length; i++) p[i] = p[i].trim();
@@ -693,10 +694,8 @@ jobs:
           import android.content.SharedPreferences;
           import android.os.Environment;
           import android.util.Log;
-
           import com.magic.loader.model.Pack;
           import com.magic.loader.model.PackOption;
-
           import java.io.File;
           import java.io.FileOutputStream;
           import java.io.IOException;
@@ -707,35 +706,22 @@ jobs:
           import java.util.List;
 
           public class PackManager {
-
-              private static final String TAG        = "PackManager";
-              private static final String PREFS      = "ml_state";
+              private static final String TAG         = "PackManager";
+              private static final String PREFS       = "ml_state";
               private static final String INSTALL_DIR =
-                  Environment.getExternalStorageDirectory()
-                      + "/games/com.mojang/renderer/materials/";
+                  Environment.getExternalStorageDirectory() + "/games/com.mojang/renderer/materials/";
 
               public static boolean install(Context ctx, Pack pack) {
                   File dir = new File(INSTALL_DIR + pack.id + "/");
-                  if (!dir.mkdirs() && !dir.isDirectory()) {
-                      Log.e(TAG, "Não criou dir: " + dir);
-                      return false;
-                  }
-
+                  if (!dir.mkdirs() && !dir.isDirectory()) { Log.e(TAG, "Não criou dir: " + dir); return false; }
                   try {
-                      String assetBase = "packs/" + pack.id;
-                      String[] files = ctx.getAssets().list(assetBase);
+                      String   base  = "packs/" + pack.id;
+                      String[] files = ctx.getAssets().list(base);
                       if (files == null) files = new String[]{};
-                      for (String f : files) {
-                          copyAsset(ctx, assetBase + "/" + f, new File(dir, f));
-                      }
-                  } catch (IOException e) {
-                      Log.e(TAG, "Erro ao copiar assets", e);
-                      return false;
-                  }
-
+                      for (String f : files) copyAsset(ctx, base + "/" + f, new File(dir, f));
+                  } catch (IOException e) { Log.e(TAG, "Erro ao copiar assets", e); return false; }
                   writeResolvedIni(dir, pack);
-
-                  pack.installed    = true;
+                  pack.installed     = true;
                   pack.installedPath = dir.getAbsolutePath();
                   persist(ctx, pack);
                   return true;
@@ -745,70 +731,50 @@ jobs:
                   if (pack.installedPath == null || pack.installedPath.isEmpty()) return true;
                   deleteRecursive(new File(pack.installedPath));
                   pack.installed     = false;
-                  pack.installedPath  = "";
-                  SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
-                  sp.edit().remove("pack_" + pack.id).apply();
+                  pack.installedPath = "";
+                  ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                     .edit().remove("pack_" + pack.id).apply();
                   return true;
               }
 
               private static void copyAsset(Context ctx, String asset, File dst) throws IOException {
                   if (dst.isDirectory()) return;
-                  try (InputStream in  = ctx.getAssets().open(asset);
+                  try (InputStream in = ctx.getAssets().open(asset);
                        OutputStream out = new FileOutputStream(dst)) {
-                      byte[] buf = new byte[16384];
-                      int n;
+                      byte[] buf = new byte[16384]; int n;
                       while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
                   }
               }
 
               private static void writeResolvedIni(File dir, Pack pack) {
-                  File f = new File(dir, "pack.ini");
                   StringBuilder sb = new StringBuilder();
-                  sb.append("; MagicLoader — gerado automaticamente\n\n");
-                  sb.append("[pack]\n");
+                  sb.append("; MagicLoader — gerado automaticamente\n\n[pack]\n");
                   sb.append("name = ").append(pack.name).append('\n');
                   sb.append("version = ").append(pack.version).append('\n');
                   sb.append("api = ").append(pack.api).append('\n');
                   sb.append("type = ").append(pack.type).append('\n');
-                  if (!pack.description.isEmpty())
-                      sb.append("description = ").append(pack.description).append('\n');
-                  sb.append("rays = ").append(pack.requiresRT ? "on" : "off").append('\n');
-                  sb.append('\n');
-
+                  if (!pack.description.isEmpty()) sb.append("description = ").append(pack.description).append('\n');
+                  sb.append("rays = ").append(pack.requiresRT ? "on" : "off").append("\n\n");
                   for (PackOption o : pack.options) {
                       sb.append("[option:").append(o.id).append("]\n");
                       sb.append("label = ").append(o.label).append('\n');
                       sb.append("type = ").append(o.type).append('\n');
-                      sb.append("value = ").append(optValStr(o)).append('\n');
-                      sb.append('\n');
+                      sb.append("value = ").append("toggle".equals(o.type) ? (o.value >= 0.5f ? "1" : "0") : o.value).append("\n\n");
                   }
-
-                  try (OutputStreamWriter w = new OutputStreamWriter(
-                          new FileOutputStream(f), StandardCharsets.UTF_8)) {
+                  try (OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(new File(dir, "pack.ini")), StandardCharsets.UTF_8)) {
                       w.write(sb.toString());
-                  } catch (IOException e) {
-                      Log.e(TAG, "Erro ao escrever pack.ini resolvido", e);
-                  }
-              }
-
-              private static String optValStr(PackOption o) {
-                  if ("toggle".equals(o.type)) return o.value >= 0.5f ? "1" : "0";
-                  return String.valueOf(o.value);
+                  } catch (IOException e) { Log.e(TAG, "Erro ao escrever pack.ini", e); }
               }
 
               private static void persist(Context ctx, Pack pack) {
-                  SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
-                  sp.edit()
-                      .putString("pack_" + pack.id + "_path", pack.installedPath)
-                      .putBoolean("pack_" + pack.id + "_on",  pack.installed)
-                      .apply();
+                  ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                     .putString("pack_" + pack.id + "_path", pack.installedPath)
+                     .putBoolean("pack_" + pack.id + "_on",  pack.installed)
+                     .apply();
               }
 
               private static void deleteRecursive(File f) {
-                  if (f.isDirectory()) {
-                      File[] kids = f.listFiles();
-                      if (kids != null) for (File k : kids) deleteRecursive(k);
-                  }
+                  if (f.isDirectory()) { File[] kids = f.listFiles(); if (kids != null) for (File k : kids) deleteRecursive(k); }
                   f.delete();
               }
 
@@ -816,7 +782,7 @@ jobs:
                   SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
                   for (Pack p : packs) {
                       p.installed     = sp.getBoolean("pack_" + p.id + "_on",   false);
-                      p.installedPath = sp.getString("pack_" + p.id + "_path",  "");
+                      p.installedPath = sp.getString("pack_"  + p.id + "_path", "");
                   }
               }
           }
@@ -835,18 +801,14 @@ jobs:
           import android.widget.RadioButton;
           import android.widget.SeekBar;
           import android.widget.TextView;
-
           import androidx.annotation.NonNull;
           import androidx.recyclerview.widget.RecyclerView;
-
           import com.magic.loader.R;
           import com.magic.loader.model.Pack;
           import com.magic.loader.model.PackOption;
-
           import java.util.List;
 
           public class PackAdapter extends RecyclerView.Adapter<PackAdapter.VH> {
-
               private final List<Pack> packs;
               private int selected = 0;
 
@@ -858,8 +820,7 @@ jobs:
 
               @NonNull @Override
               public VH onCreateViewHolder(@NonNull ViewGroup p, int t) {
-                  View v = LayoutInflater.from(p.getContext()).inflate(R.layout.item_pack, p, false);
-                  return new VH(v);
+                  return new VH(LayoutInflater.from(p.getContext()).inflate(R.layout.item_pack, p, false));
               }
 
               @Override
@@ -888,18 +849,14 @@ jobs:
                       h.llOptions.setVisibility(View.VISIBLE);
                       h.llOptions.removeAllViews();
                       Context ctx = h.itemView.getContext();
-
                       for (PackOption o : pack.options) {
                           if ("slider".equals(o.type)) {
-                              View row = LayoutInflater.from(ctx).inflate(
-                                  android.R.layout.simple_list_item_2, h.llOptions, false);
+                              View row = LayoutInflater.from(ctx).inflate(android.R.layout.simple_list_item_2, h.llOptions, false);
                               TextView tv1 = row.findViewById(android.R.id.text1);
                               TextView tv2 = row.findViewById(android.R.id.text2);
-                              tv1.setTextColor(0xFFCBAAFF);
-                              tv2.setTextColor(0xFF8888AA);
+                              tv1.setTextColor(0xFFCBAAFF); tv2.setTextColor(0xFF8888AA);
                               tv1.setText(o.label);
                               tv2.setText(String.format("%.2f", o.value));
-
                               SeekBar sb = new SeekBar(ctx);
                               int steps = Math.max(1, Math.round((o.max - o.min) / o.step));
                               sb.setMax(steps);
@@ -914,14 +871,11 @@ jobs:
                                   @Override public void onStartTrackingTouch(SeekBar s) {}
                                   @Override public void onStopTrackingTouch(SeekBar s) {}
                               });
-
                               LinearLayout col = new LinearLayout(ctx);
                               col.setOrientation(LinearLayout.VERTICAL);
                               col.setPadding(0, 8, 0, 8);
-                              col.addView(row);
-                              col.addView(sb);
+                              col.addView(row); col.addView(sb);
                               h.llOptions.addView(col);
-
                           } else if ("toggle".equals(o.type)) {
                               CheckBox cb = new CheckBox(ctx);
                               cb.setText(o.label);
@@ -942,9 +896,7 @@ jobs:
               @Override public int getItemCount() { return packs.size(); }
 
               static class VH extends RecyclerView.ViewHolder {
-                  RadioButton rb;
-                  TextView name, desc, badge, optHeader;
-                  LinearLayout llOptions;
+                  RadioButton rb; TextView name, desc, badge, optHeader; LinearLayout llOptions;
                   VH(View v) {
                       super(v);
                       rb        = v.findViewById(R.id.rb_select);
@@ -969,47 +921,37 @@ jobs:
           import android.widget.Button;
           import android.widget.TextView;
           import android.widget.Toast;
-
           import androidx.appcompat.app.AppCompatActivity;
           import androidx.recyclerview.widget.LinearLayoutManager;
           import androidx.recyclerview.widget.RecyclerView;
-
           import com.magic.loader.model.Pack;
           import com.magic.loader.ui.PackAdapter;
-
           import java.util.ArrayList;
           import java.util.List;
 
           public class MainActivity extends AppCompatActivity {
-
               private PackAdapter adapter;
               private List<Pack>  packs = new ArrayList<>();
-              private TextView    tvStatus;
-              private TextView    tvDevice;
+              private TextView    tvStatus, tvDevice;
 
               @Override
               protected void onCreate(Bundle b) {
                   super.onCreate(b);
                   setContentView(R.layout.activity_main);
-
-                  tvDevice = findViewById(R.id.tv_device);
-                  tvStatus = findViewById(R.id.tv_status);
-                  Button   btnApply = findViewById(R.id.btn_apply);
-                  RecyclerView rv   = findViewById(R.id.rv_packs);
+                  tvDevice  = findViewById(R.id.tv_device);
+                  tvStatus  = findViewById(R.id.tv_status);
+                  Button      btnApply = findViewById(R.id.btn_apply);
+                  RecyclerView rv      = findViewById(R.id.rv_packs);
 
                   boolean hasRT = detectRT();
-                  tvDevice.setText("Device: " + Build.MODEL
-                      + " | GPU: " + getGpuRenderer()
-                      + " | RT: " + (hasRT ? "Sim" : "Não"));
+                  tvDevice.setText("Device: " + Build.MODEL + " | GPU: " + getGpuRenderer() + " | RT: " + (hasRT ? "Sim" : "Não"));
 
                   packs = PackLoader.loadFromAssets(this);
                   PackManager.restoreState(this, packs);
 
                   if (!hasRT) {
                       List<Pack> safe = new ArrayList<>();
-                      for (Pack p : packs) {
-                          if (!p.requiresRT) safe.add(p);
-                      }
+                      for (Pack p : packs) if (!p.requiresRT) safe.add(p);
                       packs = safe;
                       tvStatus.setText("RT não detectado — exibindo apenas packs compatíveis.");
                   }
@@ -1017,7 +959,6 @@ jobs:
                   adapter = new PackAdapter(packs);
                   rv.setLayoutManager(new LinearLayoutManager(this));
                   rv.setAdapter(adapter);
-
                   btnApply.setOnClickListener(v -> applySelected());
                   requestPerms();
               }
@@ -1025,92 +966,55 @@ jobs:
               private void applySelected() {
                   Pack p = adapter.getSelected();
                   if (p == null) { toast("Selecione um pack"); return; }
-
-                  for (Pack old : packs) {
-                      if (old.installed && !old.id.equals(p.id)) {
-                          PackManager.uninstall(this, old);
-                      }
-                  }
-
-                  if (p.requiresRT) {
-                      toast("Este pack exige hardware RT — não compatível com " + Build.MODEL);
-                      return;
-                  }
-
+                  for (Pack old : packs) if (old.installed && !old.id.equals(p.id)) PackManager.uninstall(this, old);
+                  if (p.requiresRT) { toast("Este pack exige hardware RT — não compatível com " + Build.MODEL); return; }
                   boolean ok = PackManager.install(this, p);
-                  tvStatus.setText(ok
-                      ? "Pack \"" + p.name + "\" instalado em:\n" + p.installedPath
-                      : "Erro ao instalar. Verifique permissão de storage.");
+                  tvStatus.setText(ok ? "Pack \"" + p.name + "\" instalado em:\n" + p.installedPath
+                                      : "Erro ao instalar. Verifique permissão de storage.");
                   adapter.notifyDataSetChanged();
                   toast(ok ? "Aplicado!" : "Falhou — veja o status");
               }
 
               private boolean detectRT() {
                   try {
-                      String renderer = getGpuRenderer().toLowerCase();
-                      if (renderer.contains("mali-g52") || renderer.contains("mali-g51")
-                              || renderer.contains("mali-g31") || renderer.contains("mali-t")) {
-                          return false;
-                      }
-                      if (renderer.contains("adreno")) {
-                          String num = renderer.replaceAll("[^0-9]", "");
-                          if (!num.isEmpty()) {
-                              int n = Integer.parseInt(num.substring(0, Math.min(3, num.length())));
-                              return n >= 650;
-                          }
+                      String r = getGpuRenderer().toLowerCase();
+                      if (r.contains("mali-g52") || r.contains("mali-g51") || r.contains("mali-g31") || r.contains("mali-t")) return false;
+                      if (r.contains("adreno")) {
+                          String num = r.replaceAll("[^0-9]", "");
+                          if (!num.isEmpty()) return Integer.parseInt(num.substring(0, Math.min(3, num.length()))) >= 650;
                       }
                       return false;
-                  } catch (Exception e) {
-                      return false;
-                  }
+                  } catch (Exception e) { return false; }
               }
 
               private String getGpuRenderer() {
-                  try {
-                      return Build.HARDWARE;
-                  } catch (Exception e) {
-                      return "desconhecido";
-                  }
+                  try { return Build.HARDWARE; } catch (Exception e) { return "desconhecido"; }
               }
 
               private static final int REQ = 10;
-
               private void requestPerms() {
                   if (Build.VERSION.SDK_INT >= 30) {
                       if (!Environment.isExternalStorageManager()) {
                           try {
-                              android.content.Intent i = new android.content.Intent(
+                              startActivity(new android.content.Intent(
                                   android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                                  android.net.Uri.parse("package:" + getPackageName()));
-                              startActivity(i);
-                          } catch (Exception e) {
-                              toast("Habilite 'Acesso a todos os arquivos' nas Configurações");
-                          }
+                                  android.net.Uri.parse("package:" + getPackageName())));
+                          } catch (Exception e) { toast("Habilite 'Acesso a todos os arquivos' nas Configurações"); }
                       }
                   } else if (Build.VERSION.SDK_INT >= 23) {
-                      if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                              != PackageManager.PERMISSION_GRANTED) {
-                          requestPermissions(new String[]{
-                              Manifest.permission.READ_EXTERNAL_STORAGE,
-                              Manifest.permission.WRITE_EXTERNAL_STORAGE
-                          }, REQ);
-                      }
+                      if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+                          requestPermissions(new String[]{ Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE }, REQ);
                   }
               }
 
               @Override
               public void onRequestPermissionsResult(int rq, String[] perms, int[] results) {
                   super.onRequestPermissionsResult(rq, perms, results);
-                  if (rq == REQ) {
-                      boolean ok = results.length > 0
-                          && results[0] == PackageManager.PERMISSION_GRANTED;
-                      if (!ok) toast("Permissão de storage negada — instalação vai falhar");
-                  }
+                  if (rq == REQ && (results.length == 0 || results[0] != PackageManager.PERMISSION_GRANTED))
+                      toast("Permissão de storage negada — instalação vai falhar");
               }
 
-              private void toast(String msg) {
-                  Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-              }
+              private void toast(String msg) { Toast.makeText(this, msg, Toast.LENGTH_SHORT).show(); }
           }
           EOF
 
